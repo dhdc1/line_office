@@ -10,21 +10,34 @@
 <div style="color:white" align="center">
     <h1>หน้าจอสมัครใช้งาน</h1>
     <form method="post">
-        <input id="line_id" name="line_id">
-        <input name="fname"/>
-        <input name="lname"/>
-        <button type="submit"> ตกลง</button>
+        <div style="display:flex;flex-direction:column;justify-content:space-around">
+            <div>
+                <input id="line_id" name="line_id">
+            </div>
+            <div>
+                <input name="fname"/>
+            </div>
+            <div>
+                <input name="lname"/>
+            </div>
+            <div>
+                <button type="submit"> ตกลง</button>
+            </div>
+        </div>
+
+
     </form>
 </div>
 
 
-
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
 <script src="https://d.line-scdn.net/liff/1.0/sdk.js"></script>
 
 <script>
     liff.init(
       function (data) {
         const userId = data.context.userId;
+        //alert(userId)
         $('#line_id').val(userId);
         liff.getProfile()
           .then(profile => {
@@ -42,7 +55,10 @@
     $('.cancel').click(function (e) {
       liff.closeWindow();
     });
-  </script>
+
+
+
+</script>
 
 </body>
 </html>

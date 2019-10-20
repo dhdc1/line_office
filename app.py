@@ -212,7 +212,6 @@ def regis():
         return render_template('regis.html')
 
     if request.method == 'POST':
-
         print('request', request.form)
         return render_template('ok.html')
 
