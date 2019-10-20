@@ -133,12 +133,12 @@ def handle_text_message(event):
                 "actions": [
                     {
                         "type": "uri",
-                        "label": ">> คลิก Liff <<",
+                        "label": ">> ตรวจสอบวันลา <<",
                         "uri": "{}".format(regis_url)
                     },
                     {
                         "type": "uri",
-                        "label": ">> คลิก Web <<",
+                        "label": ">> ขอลา <<",
                         "uri": "http://google.com"
                     }
                 ],
