@@ -145,6 +145,9 @@ def handle_text_message(event):
         ])
         print('line_id = ', line_id)
 
+    if text == 'คำอื่น':
+        pass
+
 
 @handler.add(MessageEvent, message=LocationMessage)
 def handle_location_message(event):
