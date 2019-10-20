@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Regis</title>
+
+</head>
+<body bgcolor="blue">
+<div style="color:white" align="center">
+    <h1>หน้าจอสมัครใช้งาน</h1>
+    <form method="post">
+        <input id="line_id" name="line_id">
+        <input name="fname"/>
+        <input name="lname"/>
+        <button type="submit"> ตกลง</button>
+    </form>
+</div>
+
+
+
+<script src="https://d.line-scdn.net/liff/1.0/sdk.js"></script>
+
+<script>
+    liff.init(
+      function (data) {
+        const userId = data.context.userId;
+        $('#line_id').val(userId);
+        liff.getProfile()
+          .then(profile => {
+            const name = profile.displayName
+            document.title = "สวัสดีคุณ " + name;
+          })
+          .catch((err) => {
+            alert(err)
+          });
+      },
+      function (err) {
+        alert(err);
+      }
+    );
+    $('.cancel').click(function (e) {
+      liff.closeWindow();
+    });
+  </script>
+
+</body>
+</html>

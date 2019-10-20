@@ -12,7 +12,7 @@ import tempfile
 import requests
 from argparse import ArgumentParser
 
-from flask import Flask, request, abort, send_from_directory, json
+from flask import Flask, request, abort, send_from_directory, json, render_template, redirect
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from linebot import (
@@ -124,6 +124,7 @@ def handle_text_message(event):
     print('text = ', text)
     if text == 'วันลา':
         line_id = event.source.user_id
+        regis_url = 'line://app/1653357010-xXORwOD1'
         msg = {
             "type": "template",
             "altText": "this is a buttons template",
@@ -132,8 +133,13 @@ def handle_text_message(event):
                 "actions": [
                     {
                         "type": "uri",
-                        "label": ">> คลิก <<",
-                        "uri": "http://google.com?q={}".format(line_id)
+                        "label": ">> คลิก Liff <<",
+                        "uri": "{}".format(regis_url)
+                    },
+                    {
+                        "type": "uri",
+                        "label": ">> คลิก Web <<",
+                        "uri": "http://google.com"
                     }
                 ],
                 "title": "ระบบวันลา",
@@ -197,6 +203,18 @@ def handle_leave():
 @app.route('/static/<path:path>')
 def send_static_content(path):
     return send_from_directory('static', path)
+
+
+# url-routing
+@app.route('/regis', methods=['GET', 'POST'])
+def regis():
+    if request.method == 'GET':
+        return render_template('regis.html')
+
+    if request.method == 'POST':
+
+        print('request', request.form)
+        return render_template('ok.html')
 
 
 if __name__ == "__main__":
