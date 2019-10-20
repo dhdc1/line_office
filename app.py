@@ -1,41 +1,59 @@
 # -*- coding: utf-8 -*-
 
 
+from __future__ import unicode_literals
+
+import datetime
+import errno
+import json
 import os
 import sys
-import errno
-from argparse import ArgumentParser
+import tempfile
 import requests
-from flask import Flask, request, abort, json
+from argparse import ArgumentParser
+
+from flask import Flask, request, abort, send_from_directory, json
+from werkzeug.middleware.proxy_fix import ProxyFix
+
 from linebot import (
     LineBotApi, WebhookHandler
 )
 from linebot.exceptions import (
-    InvalidSignatureError
+    LineBotApiError, InvalidSignatureError
 )
 from linebot.models import (
     MessageEvent, TextMessage, TextSendMessage,
-)
+    SourceUser, SourceGroup, SourceRoom,
+    TemplateSendMessage, ConfirmTemplate, MessageAction,
+    ButtonsTemplate, ImageCarouselTemplate, ImageCarouselColumn, URIAction,
+    PostbackAction, DatetimePickerAction,
+    CameraAction, CameraRollAction, LocationAction,
+    CarouselTemplate, CarouselColumn, PostbackEvent,
+    StickerMessage, StickerSendMessage, LocationMessage, LocationSendMessage,
+    ImageMessage, VideoMessage, AudioMessage, FileMessage,
+    UnfollowEvent, FollowEvent, JoinEvent, LeaveEvent, BeaconEvent,
+    MemberJoinedEvent, MemberLeftEvent,
+    FlexSendMessage, BubbleContainer, ImageComponent, BoxComponent,
+    TextComponent, SpacerComponent, IconComponent, ButtonComponent,
+    SeparatorComponent, QuickReply, QuickReplyButton,
+    ImageSendMessage)
 
 app = Flask(__name__)
-
-static_tmp_path = os.path.join(os.path.dirname(__file__), 'static', 'tmp')
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_host=1, x_proto=1)
 
 channel_secret = 'bd6347ef544d95f709b8d8f716f08907'
 channel_access_token = 'P7MEuZKAZsKzvRzc4Ca0unYqFPoWYoSCW5KLWi8RKO5XianHNu/a4yFFawJBS7uZjoV19gwPs8DCJdG5BzWa5NfhbKIfDqPrMJsLeUtMtkjakPrmpa/sEiIEuZ4dVqV+SCVEzOOWA8T5g39H8WXTPwdB04t89/1O/w1cDnyilFU='
-if channel_secret is None:
-    print('Specify LINE_CHANNEL_SECRET as environment variable.')
-    sys.exit(1)
-if channel_access_token is None:
-    print('Specify LINE_CHANNEL_ACCESS_TOKEN as environment variable.')
+if channel_secret is None or channel_access_token is None:
+    print('Specify LINE_CHANNEL_SECRET and LINE_CHANNEL_ACCESS_TOKEN as environment variables.')
     sys.exit(1)
 
 line_bot_api = LineBotApi(channel_access_token)
 handler = WebhookHandler(channel_secret)
 
+static_tmp_path = os.path.join(os.path.dirname(__file__), 'static', 'tmp')
 
-# function
 
+# function for create tmp dir for download content
 def make_static_tmp_dir():
     try:
         os.makedirs(static_tmp_path)
@@ -77,8 +95,6 @@ def line_message_push(to_line_id, messages):
     print('push', r)
 
 
-# end function
-
 @app.route("/callback", methods=['POST'])
 def callback():
     # get X-Line-Signature header value
@@ -91,6 +107,11 @@ def callback():
     # handle webhook body
     try:
         handler.handle(body, signature)
+    except LineBotApiError as e:
+        print("Got exception from LINE Messaging API: %s\n" % e.message)
+        for m in e.error.details:
+            print("  %s: %s" % (m.property, m.message))
+        print("\n")
     except InvalidSignatureError:
         abort(400)
 
@@ -98,11 +119,81 @@ def callback():
 
 
 @handler.add(MessageEvent, message=TextMessage)
-def message_text(event):
+def handle_text_message(event):
+    text = event.message.text
+    print('text = ', text)
+    if text == 'วันลา':
+        line_id = event.source.user_id
+        msg = {
+            "type": "template",
+            "altText": "this is a buttons template",
+            "template": {
+                "type": "buttons",
+                "actions": [
+                    {
+                        "type": "uri",
+                        "label": ">> คลิก <<",
+                        "uri": "http://google.com?q={}".format(line_id)
+                    }
+                ],
+                "title": "ระบบวันลา",
+                "text": "ขอลา-ตรวจสอบวันลา"
+            }
+        }
+        line_message_reply(event, [
+            msg
+        ])
+        print('line_id = ', line_id)
+
+
+@handler.add(MessageEvent, message=LocationMessage)
+def handle_location_message(event):
     line_bot_api.reply_message(
         event.reply_token,
-        TextSendMessage(text=event.message.text)
+        LocationSendMessage(
+            title='Location', address=event.message.address,
+            latitude=event.message.latitude, longitude=event.message.longitude
+        )
     )
+
+
+@handler.add(MessageEvent, message=StickerMessage)
+def handle_sticker_message(event):
+    line_bot_api.reply_message(
+        event.reply_token,
+        StickerSendMessage(
+            package_id=event.message.package_id,
+            sticker_id=event.message.sticker_id)
+    )
+
+
+@handler.add(FollowEvent)
+def handle_follow(event):
+    app.logger.info("Got Follow event:" + event.source.user_id)
+    line_bot_api.reply_message(
+        event.reply_token, TextSendMessage(text='Got follow event'))
+
+
+@handler.add(UnfollowEvent)
+def handle_unfollow(event):
+    app.logger.info("Got Unfollow event:" + event.source.user_id)
+
+
+@handler.add(JoinEvent)
+def handle_join(event):
+    line_bot_api.reply_message(
+        event.reply_token,
+        TextSendMessage(text='Joined this ' + event.source.type))
+
+
+@handler.add(LeaveEvent)
+def handle_leave():
+    app.logger.info("Got leave event")
+
+
+@app.route('/static/<path:path>')
+def send_static_content(path):
+    return send_from_directory('static', path)
 
 
 if __name__ == "__main__":
