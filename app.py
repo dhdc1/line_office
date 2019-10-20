@@ -4,7 +4,7 @@
 import os
 import sys
 from argparse import ArgumentParser
-
+import requests
 from flask import Flask, request, abort
 from linebot import (
     LineBotApi, WebhookHandler
@@ -31,6 +31,40 @@ if channel_access_token is None:
 line_bot_api = LineBotApi(channel_access_token)
 handler = WebhookHandler(channel_secret)
 
+# function
+
+api_reply = "https://api.line.me/v2/bot/message/reply"
+api_push = "https://api.line.me/v2/bot/message/multicast"
+
+
+def line_message_reply(event, messages):
+    payload = {
+        'replyToken': event.reply_token,
+        "messages": messages
+    }
+    headers = {
+        'Authorization': 'Bearer {0}'.format(channel_access_token),
+        'Content-Type': 'application/json'
+    }
+    r = requests.post(api_reply, data=json.dumps(payload), headers=headers)
+    print('reply', r)
+
+
+def line_message_push(to_line_id, messages):
+    payload = {
+        'to': to_line_id,
+        'messages': messages
+    }
+
+    headers = {
+        'Authorization': 'Bearer {0}'.format(channel_access_token),
+        'Content-Type': 'application/json'
+    }
+    r = requests.post(api_push, data=json.dumps(payload), headers=headers)
+    print('push', r)
+
+
+# end function
 
 @app.route("/callback", methods=['POST'])
 def callback():
