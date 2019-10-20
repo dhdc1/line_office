@@ -3,9 +3,10 @@
 
 import os
 import sys
+import errno
 from argparse import ArgumentParser
 import requests
-from flask import Flask, request, abort
+from flask import Flask, request, abort, json
 from linebot import (
     LineBotApi, WebhookHandler
 )
@@ -18,9 +19,10 @@ from linebot.models import (
 
 app = Flask(__name__)
 
-# get channel_secret and channel_access_token from your environment variable
-channel_secret = os.getenv('LINE_CHANNEL_SECRET', None)
-channel_access_token = os.getenv('LINE_CHANNEL_ACCESS_TOKEN', None)
+static_tmp_path = os.path.join(os.path.dirname(__file__), 'static', 'tmp')
+
+channel_secret = 'bd6347ef544d95f709b8d8f716f08907'
+channel_access_token = 'P7MEuZKAZsKzvRzc4Ca0unYqFPoWYoSCW5KLWi8RKO5XianHNu/a4yFFawJBS7uZjoV19gwPs8DCJdG5BzWa5NfhbKIfDqPrMJsLeUtMtkjakPrmpa/sEiIEuZ4dVqV+SCVEzOOWA8T5g39H8WXTPwdB04t89/1O/w1cDnyilFU='
 if channel_secret is None:
     print('Specify LINE_CHANNEL_SECRET as environment variable.')
     sys.exit(1)
@@ -31,7 +33,18 @@ if channel_access_token is None:
 line_bot_api = LineBotApi(channel_access_token)
 handler = WebhookHandler(channel_secret)
 
+
 # function
+
+def make_static_tmp_dir():
+    try:
+        os.makedirs(static_tmp_path)
+    except OSError as exc:
+        if exc.errno == errno.EEXIST and os.path.isdir(static_tmp_path):
+            pass
+        else:
+            raise
+
 
 api_reply = "https://api.line.me/v2/bot/message/reply"
 api_push = "https://api.line.me/v2/bot/message/multicast"
@@ -93,11 +106,9 @@ def message_text(event):
 
 
 if __name__ == "__main__":
-    arg_parser = ArgumentParser(
-        usage='Usage: python ' + __file__ + ' [--port <port>] [--help]'
-    )
-    arg_parser.add_argument('-p', '--port', default=8000, help='port')
-    arg_parser.add_argument('-d', '--debug', default=False, help='debug')
-    options = arg_parser.parse_args()
+    app.jinja_env.auto_reload = True
+    app.config['TEMPLATES_AUTO_RELOAD'] = True
 
-    app.run(debug=options.debug, port=options.port)
+    make_static_tmp_dir()
+
+    app.run(debug=True, port=8000)
